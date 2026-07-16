@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel - Shared Folder</title>
+<link rel="stylesheet" href="style.css">
+<style>
+#sharePage { display: block; }
+.pin-input { text-align: center; font-size: 1.5rem; letter-spacing: 8px; }
+.pin-error { color: var(--danger); margin-bottom: 12px; text-align: center; font-size: 0.9rem; }
+.share-upload-area { border: 2px dashed var(--border); border-radius: var(--card-radius); padding: 30px; text-align: center; margin-top: 20px; cursor: pointer; transition: all var(--transition); }
+.share-upload-area.drag-over { border-color: var(--accent); background: rgba(99,102,241,0.1); }
+.share-upload-icon { font-size: 2.5rem; display: block; margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div id="sharePage">
+  <div class="share-container">
+    <div class="share-header">
+      <h1>📁 <span id="shareFolderName">Shared Folder</span></h1>
+      <p id="sharePermission" class="shared-perm" style="display:inline-block;margin-top:8px;">view</p>
+    </div>
+
+    <div id="sharePinSection" class="share-pin-section" style="display:none;">
+      <h2>This folder is PIN protected</h2>
+      <p style="color:var(--text-secondary);margin-bottom:16px;">Enter the PIN to access shared files</p>
+      <div id="pinError" class="pin-error" style="display:none;"></div>
+      <input type="password" id="pinInput" class="pin-input" maxlength="4" placeholder="••••" autocomplete="off">
+      <button onclick="verifyPin()" class="btn-primary">Verify PIN</button>
+    </div>
+
+    <div id="shareContent" style="display:none;">
+      <div id="shareFileGrid" class="file-grid"></div>
+
+      <div id="shareUploadSection" style="display:none;">
+        <div id="shareUploadArea" class="share-upload-area"
+             ondragover="event.preventDefault();this.classList.add('drag-over')"
+             ondragleave="event.preventDefault();this.classList.remove('drag-over')"
+             ondrop="shareHandleDrop(event)">
+          <span class="share-upload-icon">📤</span>
+          <p>Drag & drop files here to upload</p>
+        </div>
+        <input type="file" id="shareFileInput" multiple style="display:none" onchange="shareHandleFileSelect(event)">
+        <button onclick="document.getElementById('shareFileInput').click()" class="btn-primary" style="margin-top:12px;">Select Files</button>
+        <div id="shareUploadProgress" class="upload-progress" style="display:none;margin-top:12px;">
+          <div class="progress-bar"><div id="shareProgressFill" class="progress-fill"></div></div>
+          <span id="shareProgressText">0%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API_URL = '';
+let shareToken = '';
+let sharePermission = 'view';
+
+function getTokenFromPath() {
+  const parts = window.location.pathname.split('/');
+  return parts[parts.length - 1] || '';
+}
+
+async function loadShare() {
+  shareToken = getTokenFromPath();
+  if (!shareToken) {
+    document.getElementById('shareFolderName').textContent = 'Invalid share link';
+    return;
+  }
+
+  try {
+    const resp = await fetch(`${API_URL}/share/${shareToken}`, { method: 'GET' });
+    const data = await resp.json();
+
+    if (!data.success) {
+      document.getElementById('shareFolderName').textContent = data.error || 'Share not found';
+      return;
+    }
+
+    document.getElementById('shareFolderName').textContent = data.folderName || 'Shared Folder';
+
+    if (data.requiresPin) {
+      document.getElementById('sharePinSection').style.display = 'block';
+      return;
+    }
+
+    sharePermission = data.permission || 'view';
+    document.getElementById('sharePermission').textContent = sharePermission;
+    document.getElementById('shareContent').style.display = 'block';
+
+    if (sharePermission === 'edit') {
+      document.getElementById('shareUploadSection').style.display = 'block';
+    }
+
+    renderFiles(data.files || []);
+  } catch (e) {
+    document.getElementById('shareFolderName').textContent = 'Error loading share';
+  }
+}
+
+async function verifyPin() {
+  const pin = document.getElementById('pinInput').value.trim();
+  if (!pin) return;
+
+  try {
+    const resp = await fetch(`${API_URL}/share/${shareToken}/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pin }),
+    });
+    const data = await resp.json();
+
+    if (!data.success) {
+      document.getElementById('pinError').textContent = data.error || 'Invalid PIN';
+      document.getElementById('pinError').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('pinError').style.display = 'none';
+    document.getElementById('sharePinSection').style.display = 'none';
+
+    sharePermission = data.permission || 'view';
+    document.getElementById('sharePermission').textContent = sharePermission;
+    document.getElementById('shareContent').style.display = 'block';
+
+    if (sharePermission === 'edit') {
+      document.getElementById('shareUploadSection').style.display = 'block';
+    }
+
+    renderFiles(data.files || []);
+  } catch (e) {
+    document.getElementById('pinError').textContent = 'Network error';
+    document.getElementById('pinError').style.display = 'block';
+  }
+}
+
+function renderFiles(files) {
+  const grid = document.getElementById('shareFileGrid');
+  if (!files || !files.length) {
+    grid.innerHTML = '<div class="empty-state">No files in this folder</div>';
+    return;
+  }
+
+  grid.innerHTML = files.map(f => {
+    const isImage = f.contentType && f.contentType.startsWith('image/');
+    return `
+      <div class="file-card" onclick="shareDownloadFile('${f.fileId}')">
+        <div class="file-thumb">
+          ${f.thumbnailUrl
+            ? `<img src="${f.thumbnailUrl}" alt="${escHtml(f.fileName)}" loading="lazy">`
+            : `<span class="file-icon">${getFileIcon(f.contentType, f.fileName)}</span>`
+          }
+        </div>
+        <div class="file-name" title="${escHtml(f.fileName)}">${escHtml(f.fileName)}</div>
+        <div class="file-meta">
+          <span>${formatBytes(f.size)}</span>
+          ${isImage ? '<span>📷</span>' : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function shareDownloadFile(fileId) {
+  const cards = document.querySelectorAll('#shareFileGrid .file-card');
+}
+
+async function shareUploadFiles(files) {
+  const total = files.length;
+  let completed = 0;
+  showShareProgress(true, 0);
+
+  for (const file of files) {
+    try {
+      const resp = await fetch(`${API_URL}/share/${shareToken}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          contentType: file.type || 'application/octet-stream',
+          size: file.size,
+        }),
+      });
+      const data = await resp.json();
+
+      if (data.success && data.uploadUrl) {
+        await fetch(data.uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type || 'application/octet-stream' },
+        });
+      }
+    } catch (e) {
+      console.error('Upload failed:', file.name, e);
+    }
+    completed++;
+    showShareProgress(true, Math.round((completed / total) * 100));
+  }
+
+  showShareProgress(false);
+  loadShare();
+}
+
+function shareHandleFileSelect(event) {
+  const files = event.target.files;
+  if (files.length) shareUploadFiles(files);
+  event.target.value = '';
+}
+
+function shareHandleDrop(event) {
+  event.preventDefault();
+  document.getElementById('shareUploadArea').classList.remove('drag-over');
+  const files = event.dataTransfer.files;
+  if (files.length) shareUploadFiles(files);
+}
+
+function showShareProgress(show, pct) {
+  const el = document.getElementById('shareUploadProgress');
+  if (!show) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  document.getElementById('shareProgressFill').style.width = pct + '%';
+  document.getElementById('shareProgressText').textContent = pct + '%';
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+function formatBytes(bytes) {
+  if (!bytes || bytes === 0) return '0 B';
+  const sizes = ['B', 'KB', 'MB', 'GB'];
+  let i = 0;
+  let val = bytes;
+  while (val >= 1024 && i < sizes.length - 1) { val /= 1024; i++; }
+  return val.toFixed(1) + ' ' + sizes[i];
+}
+
+function getFileIcon(contentType, fileName) {
+  if (!contentType) return '📄';
+  if (contentType.startsWith('image/')) return '📷';
+  if (contentType.startsWith('video/')) return '🎬';
+  if (contentType.startsWith('audio/')) return '🎵';
+  if (contentType.includes('pdf')) return '📕';
+  if (contentType.includes('zip') || contentType.includes('rar')) return '📦';
+  return '📄';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const savedTheme = localStorage.getItem('pixel-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  loadShare();
+});
+</script>
+</body>
+</html>

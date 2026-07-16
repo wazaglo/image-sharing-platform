@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pixel - Image Sharing</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="loadingOverlay" class="loading-overlay" style="display:none">
+  <div class="spinner"></div>
+</div>
+
+<div id="app">
+
+<div id="authPages" style="display:none">
+  <div id="loginPage" class="auth-page">
+    <div class="auth-card">
+      <h1>Pixel</h1>
+      <p class="auth-subtitle">Image Sharing Platform</p>
+      <div id="loginError" class="auth-error" style="display:none"></div>
+      <input type="email" id="loginEmail" placeholder="Email" autocomplete="email">
+      <input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+      <button onclick="login()">Sign In</button>
+      <div class="auth-links">
+        <a href="#" onclick="showPage('forgotPassword')">Forgot Password?</a>
+        <a href="#" onclick="showPage('signup')">Create Account</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="signupPage" class="auth-page" style="display:none">
+    <div class="auth-card">
+      <h1>Create Account</h1>
+      <div id="signupError" class="auth-error" style="display:none"></div>
+      <input type="email" id="signupEmail" placeholder="Email" autocomplete="email">
+      <input type="password" id="signupPassword" placeholder="Password" autocomplete="new-password">
+      <input type="password" id="signupConfirm" placeholder="Confirm Password">
+      <button onclick="signup()">Sign Up</button>
+      <div class="auth-links"><a href="#" onclick="showPage('login')">Back to Sign In</a></div>
+    </div>
+  </div>
+
+  <div id="verifyPage" class="auth-page" style="display:none">
+    <div class="auth-card">
+      <h1>Verify Email</h1>
+      <div id="verifyError" class="auth-error" style="display:none"></div>
+      <p id="verifyEmailDisplay"></p>
+      <input type="text" id="verifyCode" placeholder="Verification Code">
+      <button onclick="verify()">Verify</button>
+      <div class="auth-links"><a href="#" onclick="showPage('login')">Back to Sign In</a></div>
+    </div>
+  </div>
+
+  <div id="forgotPasswordPage" class="auth-page" style="display:none">
+    <div class="auth-card">
+      <h1>Forgot Password</h1>
+      <div id="forgotError" class="auth-error" style="display:none"></div>
+      <input type="email" id="forgotEmail" placeholder="Email">
+      <button onclick="forgotPassword()">Send Code</button>
+      <div class="auth-links"><a href="#" onclick="showPage('login')">Back to Sign In</a></div>
+    </div>
+  </div>
+
+  <div id="resetPasswordPage" class="auth-page" style="display:none">
+    <div class="auth-card">
+      <h1>Reset Password</h1>
+      <div id="resetError" class="auth-error" style="display:none"></div>
+      <input type="email" id="resetEmail" placeholder="Email" readonly>
+      <input type="text" id="resetCode" placeholder="Verification Code">
+      <input type="password" id="resetPassword" placeholder="New Password">
+      <button onclick="resetPassword()">Reset</button>
+      <div class="auth-links"><a href="#" onclick="showPage('login')">Back to Sign In</a></div>
+    </div>
+  </div>
+</div>
+
+<div id="mainApp" style="display:none">
+  <nav id="navBar">
+    <div class="nav-left">
+      <span class="nav-brand">Pixel</span>
+      <div class="nav-search">
+        <input type="text" id="searchInput" placeholder="Search files..." oninput="doSearch()">
+      </div>
+    </div>
+    <div class="nav-right">
+      <button class="nav-icon-btn" onclick="toggleTheme()" title="Toggle theme">🌓</button>
+      <button class="nav-icon-btn" onclick="showPage('sharedWithMe')" title="Shared with me">👥</button>
+      <button class="nav-icon-btn" onclick="showPage('trash')" title="Trash">🗑️</button>
+      <button class="nav-icon-btn" onclick="showPage('admin')" title="Admin" id="adminBtn" style="display:none">⚙️</button>
+      <button class="nav-icon-btn" onclick="showPage('account')" title="Account">👤</button>
+      <button class="nav-icon-btn" onclick="signOut()" title="Sign out">🚪</button>
+    </div>
+  </nav>
+
+  <div id="pageContent">
+    <div id="dashboardPage" class="page">
+      <div class="page-header">
+        <h2>My Folders</h2>
+        <button onclick="showCreateFolderModal()" class="btn-primary">+ New Folder</button>
+      </div>
+      <div id="dashboardFolders" class="folder-grid"></div>
+    </div>
+
+    <div id="folderPage" class="page" style="display:none">
+      <div id="breadcrumb" class="breadcrumb"></div>
+      <div class="folder-actions">
+        <button onclick="showCreateFolderModal()" class="btn-primary">+ New Folder</button>
+        <button onclick="triggerUpload()" class="btn-primary">📤 Upload Files</button>
+        <button onclick="triggerFolderUpload()" class="btn-primary">📁 Upload Folder</button>
+        <input type="file" id="fileInput" multiple style="display:none" onchange="handleFileInput(event)">
+        <input type="file" id="folderInput" webkitdirectory style="display:none" onchange="handleFolderInput(event)">
+      </div>
+      <div id="uploadArea" class="upload-area" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+        <div class="upload-area-content">
+          <span class="upload-icon">📁</span>
+          <p>Drag & drop files or folders here</p>
+          <p class="upload-hint">Supports images, videos, documents, and more</p>
+        </div>
+      </div>
+      <div id="uploadProgress" class="upload-progress" style="display:none">
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+        <span id="progressText">0%</span>
+      </div>
+      <div id="batchBar" class="batch-bar" style="display:none">
+        <span id="selectedCount">0 selected</span>
+        <button onclick="batchDelete()" class="btn-danger">Delete Selected</button>
+        <button onclick="clearSelection()" class="btn-secondary">Clear</button>
+      </div>
+      <div id="subfoldersSection" style="display:none">
+        <h3>Subfolders</h3>
+        <div id="subfoldersGrid" class="folder-grid"></div>
+      </div>
+      <div class="file-toolbar">
+        <h3>Files</h3>
+        <div class="file-controls">
+          <select id="sortSelect" onchange="setSort(this.value)">
+            <option value="name">Name</option>
+            <option value="date">Date</option>
+            <option value="size">Size</option>
+            <option value="type">Type</option>
+          </select>
+          <select id="filterSelect" onchange="setFilter(this.value)">
+            <option value="all">All Files</option>
+            <option value="image">Images</option>
+            <option value="video">Videos</option>
+            <option value="audio">Audio</option>
+            <option value="document">Documents</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      </div>
+      <div id="fileGrid" class="file-grid"></div>
+    </div>
+
+    <div id="searchPage" class="page" style="display:none">
+      <div class="page-header">
+        <h2>Search Results</h2>
+      </div>
+      <div id="searchResults" class="file-grid"></div>
+    </div>
+
+    <div id="sharedWithMePage" class="page" style="display:none">
+      <div class="page-header">
+        <h2>Shared With Me</h2>
+      </div>
+      <div id="sharedWithMeContent"></div>
+    </div>
+
+    <div id="trashPage" class="page" style="display:none">
+      <div class="page-header">
+        <h2>Trash</h2>
+        <button onclick="emptyTrash()" class="btn-danger">Empty Trash</button>
+      </div>
+      <div id="trashContent" class="file-grid"></div>
+    </div>
+
+    <div id="adminPage" class="page" style="display:none">
+      <div class="page-header">
+        <h2>Admin Panel</h2>
+      </div>
+      <div class="admin-table-wrapper">
+        <table class="admin-table">
+          <thead><tr><th>Email</th><th>Status</th><th>Created</th><th>Actions</th></tr></thead>
+          <tbody id="adminUsersBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div id="accountPage" class="page" style="display:none">
+      <div class="page-header">
+        <h2>Account</h2>
+      </div>
+      <div class="account-cards">
+        <div class="card">
+          <h3>Profile</h3>
+          <p><strong>Email:</strong> <span id="accountEmail"></span></p>
+          <p><strong>Storage Used:</strong> <span id="accountStorage"></span></p>
+        </div>
+        <div class="card">
+          <h3>Update Email</h3>
+          <input type="email" id="updateEmailInput" placeholder="New email">
+          <button onclick="updateEmail()" class="btn-primary">Update</button>
+        </div>
+        <div class="card">
+          <h3>Change Password</h3>
+          <input type="password" id="changePasswordOld" placeholder="Current password">
+          <input type="password" id="changePasswordNew" placeholder="New password">
+          <button onclick="changePassword()" class="btn-primary">Change</button>
+        </div>
+        <div class="card danger-zone">
+          <h3>Danger Zone</h3>
+          <p>Permanently delete your account and all data.</p>
+          <button onclick="deleteAccount()" class="btn-danger">Delete Account</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="createFolderModal" class="modal" style="display:none">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('createFolderModal')">&times;</span>
+    <h3>Create Folder</h3>
+    <input type="text" id="newFolderName" placeholder="Folder name">
+    <button onclick="createFolder()" class="btn-primary">Create</button>
+  </div>
+</div>
+
+<div id="renameFolderModal" class="modal" style="display:none">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('renameFolderModal')">&times;</span>
+    <h3>Rename Folder</h3>
+    <input type="text" id="renameFolderInput" placeholder="New name">
+    <button onclick="renameFolder()" class="btn-primary">Rename</button>
+  </div>
+</div>
+
+<div id="renameFileModal" class="modal" style="display:none">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('renameFileModal')">&times;</span>
+    <h3>Rename File</h3>
+    <input type="text" id="renameFileInput" placeholder="New name">
+    <button onclick="renameFile()" class="btn-primary">Rename</button>
+  </div>
+</div>
+
+<div id="moveFileModal" class="modal" style="display:none">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('moveFileModal')">&times;</span>
+    <h3>Move File</h3>
+    <select id="moveFolderSelect"></select>
+    <button onclick="moveFile()" class="btn-primary">Move</button>
+  </div>
+</div>
+
+<div id="shareModal" class="modal" style="display:none">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal('shareModal')">&times;</span>
+    <h3>Share Folder</h3>
+    <div class="share-field">
+      <label>Share Link</label>
+      <div class="share-link-row">
+        <input type="text" id="shareLinkOutput" readonly>
+        <button onclick="copyShareLink()" class="btn-primary">Copy</button>
+      </div>
+    </div>
+    <div class="share-field">
+      <label>PIN Protection (optional)</label>
+      <input type="text" id="sharePinInput" placeholder="4-digit PIN" maxlength="4">
+    </div>
+    <div class="share-field">
+      <label>Expiry</label>
+      <input type="datetime-local" id="shareExpiryInput">
+    </div>
+    <div class="share-field">
+      <label>Permission</label>
+      <select id="sharePermissionSelect">
+        <option value="view">View Only</option>
+        <option value="edit">Can Edit</option>
+      </select>
+    </div>
+    <div class="share-field">
+      <label>Share with emails (comma separated)</label>
+      <input type="text" id="shareEmailsInput" placeholder="user1@example.com, user2@example.com">
+    </div>
+    <button onclick="generateShareLink()" class="btn-primary">Generate Link</button>
+  </div>
+</div>
+
+<div id="previewModal" class="modal modal-preview" style="display:none">
+  <div class="modal-content modal-content-preview">
+    <span class="modal-close" onclick="closeModal('previewModal')">&times;</span>
+    <div id="previewContent"></div>
+  </div>
+</div>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
