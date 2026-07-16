@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv
+venv/
+env/
+*.egg-info/
+dist/
+build/
+
+# Node
+node_modules/
+package-lock.json
+yarn.lock
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Terraform
+terraform/.terraform/
+terraform/terraform.tfstate*
+terraform/terraform.tfvars
+terraform/lambda-zips/*.zip
+*.tfplan
+
+# Project
+*.zip
+*.tgz
+cdk.out/
+cloudformation/output/
+.env
+*.log
