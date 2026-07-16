@@ -1,0 +1,11 @@
+environment     = "dev"
+aws_region      = "us-east-1"
+aws_profile     = "gloria"
+bucket_name     = "nunya-pixel"
+log_level       = "DEBUG"
+lambda_memory_size = 128
+lambda_timeout  = 30
+log_retention_days = 14
+admin_emails    = "dev-admin@imageshare.com"
+alarm_email     = "admin@example.com"
+certificate_arn = ""
