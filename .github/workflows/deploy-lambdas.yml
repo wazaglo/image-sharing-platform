@@ -1,0 +1,120 @@
+name: Deploy Lambda Functions
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/backend/lambdas/**'
+      - 'src/backend/shared/**'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run Gitleaks (secret detection)
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run Trivy (vulnerability scan)
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: fs
+          scan-ref: .
+          scan-title: "ImageShare Lambda Code"
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+
+      - name: Upload Trivy results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy
+
+  detect-changes:
+    needs: security-scan
+    runs-on: ubuntu-latest
+    outputs:
+      folder_manager: ${{ steps.filter.outputs.folder_manager }}
+      upload_handler: ${{ steps.filter.outputs.upload_handler }}
+      share_link_generator: ${{ steps.filter.outputs.share_link_generator }}
+      public_access_handler: ${{ steps.filter.outputs.public_access_handler }}
+      image_processor: ${{ steps.filter.outputs.image_processor }}
+      webdav_handler: ${{ steps.filter.outputs.webdav_handler }}
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            folder_manager:
+              - 'src/backend/lambdas/folder_manager/**'
+            upload_handler:
+              - 'src/backend/lambdas/upload_handler/**'
+            share_link_generator:
+              - 'src/backend/lambdas/share_link_generator/**'
+            public_access_handler:
+              - 'src/backend/lambdas/public_access_handler/**'
+            image_processor:
+              - 'src/backend/lambdas/image_processor/**'
+            webdav_handler:
+              - 'src/backend/lambdas/webdav_handler/**'
+            shared:
+              - 'src/backend/shared/**'
+
+  deploy:
+    needs: [security-scan, detect-changes]
+    if: ${{ !cancelled() && needs.security-scan.result == 'success' }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - function: FolderManager
+            key: folder_manager
+          - function: UploadHandler
+            key: upload_handler
+          - function: ShareLinkGenerator
+            key: share_link_generator
+          - function: PublicAccessHandler
+            key: public_access_handler
+          - function: ImageProcessor
+            key: image_processor
+          - function: WebDAVHandler
+            key: webdav_handler
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_LAMBDA_DEPLOY_ROLE }}
+          aws-region: us-east-1
+
+      - name: Check if deployment needed
+        id: check
+        run: |
+          echo "deploy=${{ needs.detect-changes.outputs[matrix.key] == 'true' || needs.detect-changes.outputs.shared == 'true' }}" >> $GITHUB_OUTPUT
+
+      - name: Package and deploy Lambda
+        if: steps.check.outputs.deploy == 'true'
+        run: |
+          DIR="src/backend/lambdas/${{ matrix.key }}"
+          BUILD="/tmp/lambda-build"
+          rm -rf "$BUILD" && mkdir -p "$BUILD"
+          cp "$DIR/handler.py" "$BUILD/lambda_function.py"
+          cp src/backend/shared/*.py "$BUILD/"
+          cd "$BUILD" && zip -r9 /tmp/deploy.zip .
+          aws lambda update-function-code \
+            --function-name "${{ matrix.function }}" \
+            --zip-file fileb:///tmp/deploy.zip
