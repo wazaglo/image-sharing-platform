@@ -102,7 +102,7 @@ locals {
   options_integration_response_params = {
     "method.response.header.Access-Control-Allow-Headers" = local.cors_headers
     "method.response.header.Access-Control-Allow-Methods" = local.cors_methods
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
+    "method.response.header.Access-Control-Allow-Origin"  = "'https://${aws_cloudfront_distribution.main.domain_name}'"
   }
 }
 
@@ -541,7 +541,7 @@ resource "aws_api_gateway_integration_response" "webdav_proxy_options" {
   response_parameters = {
     "method.response.header.Access-Control-Allow-Headers"  = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,Depth,Overwrite,Destination'"
     "method.response.header.Access-Control-Allow-Methods"  = "'GET,HEAD,PUT,POST,DELETE,OPTIONS,PROPFIND,PROPPATCH,MKCOL,COPY,MOVE,LOCK,UNLOCK'"
-    "method.response.header.Access-Control-Allow-Origin"   = "'*'"
+    "method.response.header.Access-Control-Allow-Origin"   = "'https://${aws_cloudfront_distribution.main.domain_name}'"
     "method.response.header.Access-Control-Expose-Headers" = "'DAV'"
   }
   response_templates = {
