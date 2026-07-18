@@ -197,19 +197,17 @@ resource "aws_cloudwatch_log_group" "webdav_handler" {
 
 locals {
   lambda_env = {
-    BUCKET_NAME      = var.bucket_name
-    FOLDERS_TABLE    = aws_dynamodb_table.folders.name
-    FILES_TABLE      = aws_dynamodb_table.files.name
-    SHARES_TABLE     = aws_dynamodb_table.shares.name
-    USERS_PREFIX     = var.users_prefix
-    THUMBNAIL_PREFIX = var.thumbnail_prefix
-    LOG_LEVEL        = var.log_level
+    BUCKET_NAME       = var.bucket_name
+    FOLDERS_TABLE     = aws_dynamodb_table.folders.name
+    FILES_TABLE       = aws_dynamodb_table.files.name
+    SHARES_TABLE      = aws_dynamodb_table.shares.name
+    USERS_PREFIX      = var.users_prefix
+    THUMBNAIL_PREFIX  = var.thumbnail_prefix
+    CLOUDFRONT_DOMAIN = aws_cloudfront_distribution.main.domain_name
+    LOG_LEVEL         = var.log_level
   }
   lambda_env_with_admin = merge(local.lambda_env, {
     ADMIN_EMAILS = var.admin_emails
-  })
-  lambda_env_with_cdn = merge(local.lambda_env, {
-    CLOUDFRONT_DOMAIN = aws_cloudfront_distribution.main.domain_name
   })
 }
 
@@ -233,7 +231,7 @@ resource "aws_lambda_function" "folder_manager" {
   }
 
   environment {
-    variables = merge(local.lambda_env_with_admin, local.lambda_env_with_cdn)
+    variables = local.lambda_env_with_admin
   }
 
   tags = {
