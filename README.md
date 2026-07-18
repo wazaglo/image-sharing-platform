@@ -76,7 +76,8 @@ The browser serves static assets from S3 via CloudFront. API calls go through Cl
 ## Prerequisites
 
 - **Python 3.11+** — Runtime for Lambda functions and local testing
-- **AWS CLI v2** — Configured with credentials that have permissions for CloudFormation, S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM
+- **Terraform >= 1.5** — Infrastructure as Code tool for deploying all AWS resources
+- **AWS CLI v2** — Configured with credentials (profile `gloria`) that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM
 - **AWS Account** — An active AWS account with sufficient service quotas
 - **Node.js 18+** (optional) — Only needed if you want to build/minify the frontend assets locally
 - **Domain name** (optional) — For a custom CloudFront domain and HTTPS certificate
@@ -89,53 +90,26 @@ The browser serves static assets from S3 via CloudFront. API calls go through Cl
 # 1. Clone the repository
 git clone <repo-url> image-sharing-platform && cd image-sharing-platform
 
-# 2. Deploy storage resources (S3 buckets and DynamoDB tables)
-aws cloudformation deploy \
-  --stack-name image-share-storage \
-  --template-file cloudformation/templates/01-storage.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
+# 2. Initialize Terraform
+terraform -chdir=terraform init -backend=false
 
-# 3. Deploy auth resources (Cognito User Pool and App Client)
-aws cloudformation deploy \
-  --stack-name image-share-auth \
-  --template-file cloudformation/templates/02-auth.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
+# 3. Deploy all AWS infrastructure (S3, DynamoDB, Cognito, Lambda, API Gateway, CloudFront)
+terraform -chdir=terraform plan -var-file=environments/dev/terraform.tfvars -out plan.tfplan
+terraform -chdir=terraform apply plan.tfplan
 
-# 4. Deploy compute resources (Lambda functions and EventBridge rules)
-aws cloudformation deploy \
-  --stack-name image-share-compute \
-  --template-file cloudformation/templates/03-compute.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
+# 4. Upload the frontend static assets to the UI S3 bucket
+aws s3 sync src/frontend/ui/ s3://<your-ui-bucket>/ui/ --cache-control 'max-age=3600'
 
-# 5. Deploy API Gateway and WebDAV endpoint
-aws cloudformation deploy \
-  --stack-name image-share-api \
-  --template-file cloudformation/templates/04-api.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
-
-# 6. Upload the frontend S3 bucket and deploy CloudFront distribution
-aws cloudformation deploy \
-  --stack-name image-share-frontend \
-  --template-file cloudformation/templates/05-frontend.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
-aws s3 sync src/frontend/ui/ s3://<your-ui-bucket>/ui/
-
-# 7. Deploy monitoring and alarms
-aws cloudformation deploy \
-  --stack-name image-share-monitoring \
-  --template-file cloudformation/templates/06-monitoring.yaml \
-  --capabilities CAPABILITY_NAMED_IAM
-
-# 8. Open the CloudFront URL from the frontend stack outputs
+# 5. Open the CloudFront URL from the Terraform outputs
 ```
 
-> **Tip:** Replace `<repo-url>` and `<your-ui-bucket>` with actual values. The UI bucket name is available in the outputs of the `image-share-frontend` stack.
+> **Tip:** Replace `<repo-url>` and `<your-ui-bucket>` with actual values. Use `make tf-apply env=dev` as a shortcut for steps 2–3.
 
 ---
 
 ## Environment Variables
 
-The following environment variables are injected into each Lambda function via the CloudFormation template. Most are read from the stack parameters or resource references at deploy time.
+The following environment variables are injected into each Lambda function via the Terraform configuration. Most are read from the input variables or resource references at deploy time.
 
 | Variable | Used By | Description |
 |----------|---------|-------------|
@@ -172,18 +146,24 @@ The following environment variables are injected into each Lambda function via t
 image-sharing-platform/
 ├── .github/
 │   └── workflows/              # CI/CD pipeline definitions
-├── cloudformation/
-│   ├── templates/              # CloudFormation YAML templates (01-06)
-│   ├── parameters/             # Dev/prod parameter JSON files
-│   └── scripts/                # Deploy and teardown helper scripts
+├── terraform/
+│   ├── provider.tf             # AWS provider + backend config
+│   ├── variables.tf            # All input variables
+│   ├── outputs.tf              # All output values
+│   ├── storage.tf              # S3 buckets + DynamoDB tables
+│   ├── auth.tf                 # Cognito user pool + clients
+│   ├── compute.tf              # IAM + Lambda + EventBridge + SQS
+│   ├── api-gateway.tf          # API Gateway REST API
+│   ├── frontend.tf             # CloudFront + bucket policy
+│   ├── monitoring.tf           # CloudWatch dashboard + SNS alarms
+│   └── environments/           # Dev/prod var files
+│       ├── dev/
+│       └── prod/
 ├── docs/
 │   ├── architecture.md         # Deep-dive architecture documentation
 │   ├── api.md                  # API reference with request/response examples
 │   └── security.md             # Security model, IAM roles, encryption
-├── scripts/
-│   ├── deploy.sh               # Full-stack deployment wrapper
-│   ├── teardown.sh             # Stack teardown with cleanup
-│   └── seed.py                 # Test data seeder for local dev
+├── Makefile                    # Convenience targets (tf-*, lint, test)
 ├── src/
 │   ├── backend/
 │   │   └── lambdas/            # Python source for each Lambda function
@@ -209,34 +189,34 @@ image-sharing-platform/
 
 ## Deployment Order
 
-The platform is deployed as six independent CloudFormation stacks. Each builds on the outputs of the previous stacks.
+The platform is deployed as a single Terraform configuration composed of multiple resource files. Each file manages a logical layer of the infrastructure.
 
-1. **01-storage.yaml** — S3 buckets for files and UI, DynamoDB tables for folders, files, and shares
-2. **02-auth.yaml** — Cognito User Pool, User Pool Client, and domain configuration
-3. **03-compute.yaml** — Lambda function roles, function definitions, and EventBridge rules
-4. **04-api.yaml** — API Gateway REST API, routes, integrations, and WebDAV endpoint
-5. **05-frontend.yaml** — CloudFront distribution, S3 bucket policy, and origin access identity
-6. **06-monitoring.yaml** — CloudWatch alarms, dashboard, and log group retention policies
+1. **storage.tf** — S3 buckets for files and UI, DynamoDB tables for folders, files, and shares
+2. **auth.tf** — Cognito User Pool, User Pool Client, and domain configuration
+3. **compute.tf** — Lambda function roles, function definitions, and EventBridge rules
+4. **api-gateway.tf** — API Gateway REST API, routes, integrations, and WebDAV endpoint
+5. **frontend.tf** — CloudFront distribution, S3 bucket policy, and origin access identity
+6. **monitoring.tf** — CloudWatch alarms, dashboard, and log group retention policies
 
-All templates accept a `Stage` parameter (`dev` or `prod`) to control resource naming and sizing.
+All configurations accept an `environment` variable (`dev` or `prod`) to control resource naming and sizing.
 
 ---
 
 ## Configuration
 
-Environment-specific parameter files are located in `cloudformation/parameters/`:
+Environment-specific variable files are located in `terraform/environments/`:
 
-- `dev-parameters.json` — Minimized resources, lower DynamoDB read/write capacity, shorter log retention
-- `prod-parameters.json` — Production-sized DynamoDB capacity, longer log retention, additional alarms
+- `dev/terraform.tfvars` — Minimized resources, lower DynamoDB read/write capacity, shorter log retention
+- `prod/terraform.tfvars` — Production-sized DynamoDB capacity, longer log retention, additional alarms
 
-Override any parameter at deploy time with `--parameter-overrides`:
+Override any variable at deploy time with `-var` or a custom `.tfvars` file:
 
 ```bash
-aws cloudformation deploy \
-  --stack-name image-share-storage \
-  --template-file cloudformation/templates/01-storage.yaml \
-  --parameter-overrides Stage=prod DynamoDBReadCapacity=10 DynamoDBWriteCapacity=5 \
-  --capabilities CAPABILITY_NAMED_IAM
+terraform -chdir=terraform plan \
+  -var="environment=prod" \
+  -var="bucket_name=my-bucket" \
+  -var-file=environments/prod/terraform.tfvars \
+  -out plan.tfplan
 ```
 
 ---
