@@ -77,7 +77,7 @@ The browser serves static assets from S3 via CloudFront. API calls go through Cl
 
 - **Python 3.11+** — Runtime for Lambda functions and local testing
 - **Terraform >= 1.5** — Infrastructure as Code tool for deploying all AWS resources
-- **AWS CLI v2** — Configured with credentials (profile `gloria`) that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM
+- **AWS CLI v2** — Configured with credentials  that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM
 - **AWS Account** — An active AWS account with sufficient service quotas
 - **Node.js 18+** (optional) — Only needed if you want to build/minify the frontend assets locally
 - **Domain name** (optional) — For a custom CloudFront domain and HTTPS certificate
