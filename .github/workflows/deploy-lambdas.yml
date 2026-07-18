@@ -97,11 +97,38 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Print OIDC token claims (debug)
+        id: oidc-debug
+        env:
+          ACTIONS_ID_TOKEN_REQUEST_URL: ${{ env.ACTIONS_ID_TOKEN_REQUEST_URL }}
+          ACTIONS_ID_TOKEN_REQUEST_TOKEN: ${{ env.ACTIONS_ID_TOKEN_REQUEST_TOKEN }}
+        run: |
+          TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
+            "${ACTIONS_ID_TOKEN_REQUEST_URL}&audience=sts.amazonaws.com")
+          echo "OIDC token claims:"
+          echo "$TOKEN" | python3 -c "
+import sys, json
+token = json.load(sys.stdin)
+# JWT is in the 'value' field
+import base64
+parts = token['value'].split('.')
+# Fix padding
+for i, p in enumerate(parts):
+    parts[i] += '=' * (4 - len(p) % 4) if len(p) % 4 else ''
+try:
+    claims = json.loads(base64.b64decode(parts[1]).decode())
+    print(json.dumps(claims, indent=2))
+except:
+    print('Could not decode claims')
+"
+          echo "DEBUG_DONE=true" >> $GITHUB_ENV
+
       - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v3
         with:
           role-to-assume: ${{ secrets.AWS_LAMBDA_DEPLOY_ROLE }}
           aws-region: us-east-1
+          audience: sts.amazonaws.com
 
       - name: Check if deployment needed
         id: check
