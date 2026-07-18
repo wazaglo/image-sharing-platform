@@ -19,7 +19,7 @@ THUMBNAIL_SIZE = int(os.environ.get('THUMBNAIL_SIZE', 200))
 
 
 def lambda_handler(event: Dict, context) -> Dict:
-    logger.info(f'Event received: {json.dumps(event)}')
+    logger.info(f'Processing event: {json.dumps(event)}')
 
     try:
         for record in event.get('Records', []):

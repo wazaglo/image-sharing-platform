@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/backend/lambdas/**'
       - 'src/backend/shared/**'
+  workflow_dispatch:
 
 permissions:
   id-token: write
