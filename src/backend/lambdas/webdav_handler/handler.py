@@ -35,7 +35,7 @@ def response(status_code: int, body: Any = None) -> Dict[str, Any]:
         'statusCode': status_code,
         'headers': {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Origin': f'https://{CLOUDFRONT_DOMAIN}',
             'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS,MKCOL,MOVE,PROPFIND',
             'Access-Control-Allow-Headers': 'Content-Type,Authorization',
         },
