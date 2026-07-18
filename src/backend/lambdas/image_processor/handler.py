@@ -114,5 +114,3 @@ def process_record(record: Dict):
         logger.info(f'Thumbnail created: {thumb_key} (from {key})')
     except Exception as e:
         logger.error(f'Failed to generate thumbnail for {key}: {e}')
-
-
