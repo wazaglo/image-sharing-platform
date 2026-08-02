@@ -9,39 +9,7 @@ A fully serverless image sharing platform built on AWS, inspired by ownCloud and
 
 ## Architecture
 
-```
-┌──────────────────────────────────────────────────────┐
-│                    CloudFront                         │
-│          ┌─────────────────┐  ┌──────────────────┐   │
-│          │  S3 (UI Static) │  │  S3 (File Store) │   │
-│          │  /ui/           │  │  /users/          │   │
-│          │                 │  │  /thumbnails/     │   │
-│          └────────┬────────┘  └────────▲─────────┘   │
-│                   │                     │             │
-│        ┌──────────┴──────────┐          │             │
-│        │   API Gateway REST  │          │             │
-│        │   /folders/*        │          │             │
-│        │   /share/*          │          │             │
-│        │   /webdav/*         │          │             │
-│        └──────────┬──────────┘          │             │
-│                   │                     │             │
-│        ┌──────────▼──────────┐          │             │
-│        │   Cognito User Pool │          │             │
-│        │   (Sign-up / Login) │          │             │
-│        └─────────────────────┘          │             │
-│                                          │             │
-│   ┌──────────────────────────────────────┼──────────┐ │
-│   │            Lambda Functions          │          │ │
-│   │                                      │          │ │
-│   │  FolderManager ────┐                 │          │ │
-│   │  UploadHandler ────┤                 │          │ │
-│   │  ShareLinkGen  ────┤── DynamoDB      │          │ │
-│   │  PublicAccess  ────┘                 │          │ │
-│   │  WebDAVHandler                       │          │ │
-│   │  ImageProcessor ─── EventBridge ◄────┘          │ │
-│   └──────────────────────────────────────────────────┘ │
-└──────────────────────────────────────────────────────┘
-```
+![ImageShare architecture](Image%20Share.png)
 
 The browser serves static assets from S3 via CloudFront. API calls go through CloudFront to API Gateway, which authorizes via Cognito and routes to Lambda functions. Lambdas coordinate file metadata in DynamoDB and file objects in S3. When a file lands in S3, an EventBridge rule triggers the ImageProcessor Lambda to generate thumbnails. Public share links bypass Cognito and go through a dedicated handler with PIN verification.
 
