@@ -11,7 +11,7 @@ A fully serverless image sharing platform built on AWS, inspired by ownCloud and
 
 ![ImageShare architecture](Image%20Share.png)
 
-The browser serves static assets from S3 via CloudFront. API calls go through CloudFront to API Gateway, which authorizes via Cognito and routes to Lambda functions. Lambdas coordinate file metadata in DynamoDB and file objects in S3. When a file lands in S3, an EventBridge rule triggers the ImageProcessor Lambda to generate thumbnails. Public share links bypass Cognito and go through a dedicated handler with PIN verification.
+The browser loads the static UI served from S3 via CloudFront (Origin Access Control). API calls go directly to the regional API Gateway, which authorizes via a Cognito user pool authorizer and routes to Lambda functions. Lambdas coordinate file metadata in DynamoDB and file objects in S3. When a file lands in S3, an EventBridge rule triggers the ImageProcessor Lambda to generate thumbnails. Failed Lambda executions are sent to an SQS dead-letter queue, and CloudWatch dashboards with SNS alarms provide observability. Public share links bypass Cognito and go through a dedicated handler with PIN verification.
 
 ---
 
@@ -45,7 +45,7 @@ The browser serves static assets from S3 via CloudFront. API calls go through Cl
 
 - **Python 3.11+** — Runtime for Lambda functions and local testing
 - **Terraform >= 1.5** — Infrastructure as Code tool for deploying all AWS resources
-- **AWS CLI v2** — Configured with credentials  that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM
+- **AWS CLI v2** — Configured with credentials that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM. The Terraform config defaults to the `gloria` `aws_profile` (override via `-var="aws_profile=..."`)
 - **AWS Account** — An active AWS account with sufficient service quotas
 - **Node.js 18+** (optional) — Only needed if you want to build/minify the frontend assets locally
 - **Domain name** (optional) — For a custom CloudFront domain and HTTPS certificate
@@ -59,39 +59,55 @@ The browser serves static assets from S3 via CloudFront. API calls go through Cl
 git clone <repo-url> image-sharing-platform && cd image-sharing-platform
 
 # 2. Initialize Terraform
+#    -backend=false keeps state local to this machine (for local dev/testing).
+#    Use -backend-config="..." (bucket, key, region) to persist state to the
+#    remote S3 backend image-share-terraform-state.
 terraform -chdir=terraform init -backend=false
 
 # 3. Deploy all AWS infrastructure (S3, DynamoDB, Cognito, Lambda, API Gateway, CloudFront)
 terraform -chdir=terraform plan -var-file=environments/dev/terraform.tfvars -out plan.tfplan
 terraform -chdir=terraform apply plan.tfplan
 
-# 4. Upload the frontend static assets to the UI S3 bucket
-aws s3 sync src/frontend/ui/ s3://<your-ui-bucket>/ui/ --cache-control 'max-age=3600'
+# 4. Upload the frontend static assets to the S3 bucket (UI lives under /ui/)
+aws s3 sync src/frontend/ui/ s3://<your-bucket>/ui/ --cache-control 'max-age=3600'
 
 # 5. Open the CloudFront URL from the Terraform outputs
 ```
 
-> **Tip:** Replace `<repo-url>` and `<your-ui-bucket>` with actual values. Use `make tf-apply env=dev` as a shortcut for steps 2–3.
+> **Tip:** Replace `<repo-url>` and `<your-bucket>` with actual values (the default bucket name is `nunya-pixel`). For steps 2–3 use `make tf-apply env=dev`, and for step 4 `BUCKET=<your-bucket> make upload-frontend`. `make invalidate-cache` purges the CloudFront `/ui/*` cache after an update.
+
+## Makefile Targets
+
+| Target | Description |
+|--------|-------------|
+| `make tf-init` | `terraform init -backend=false` |
+| `make tf-plan env=dev` | `terraform plan` with the dev tfvars |
+| `make tf-apply env=dev` | `terraform apply` the saved plan |
+| `make tf-destroy env=dev` | `terraform destroy` the environment |
+| `make lint` | `terraform fmt -check && terraform validate` |
+| `make test` | Run pytest (requires a `tests/` directory — not yet added) |
+| `make upload-frontend` | `aws s3 sync src/frontend/ui/ s3://$BUCKET/ui/` |
+| `make invalidate-cache` | CloudFront cache invalidation of `/ui/*` |
 
 ---
 
 ## Environment Variables
 
-The following environment variables are injected into each Lambda function via the Terraform configuration. Most are read from the input variables or resource references at deploy time.
+The following environment variables are injected into each Lambda function via the Terraform configuration (`lambda_env` in `compute.tf`). Most are read from the input variables or resource references at deploy time.
 
 | Variable | Used By | Description |
 |----------|---------|-------------|
 | `BUCKET_NAME` | All Lambdas | S3 bucket name for file object storage |
-| `FOLDERS_TABLE` | FolderManager, ShareLinkGenerator, PublicAccessHandler | DynamoDB table name for folder metadata |
-| `FILES_TABLE` | FolderManager, UploadHandler, PublicAccessHandler, WebDAVHandler | DynamoDB table name for file metadata |
-| `SHARES_TABLE` | FolderManager, ShareLinkGenerator, PublicAccessHandler | DynamoDB table name for share link records |
+| `FOLDERS_TABLE` | All Lambdas | DynamoDB table name for folder metadata |
+| `FILES_TABLE` | All Lambdas | DynamoDB table name for file metadata |
+| `SHARES_TABLE` | All Lambdas | DynamoDB table name for share link records |
 | `USERS_PREFIX` | All Lambdas | S3 key prefix for user file storage (`users/`) |
 | `THUMBNAIL_PREFIX` | All Lambdas | S3 key prefix for generated thumbnails (`thumbnails/`) |
-| `CLOUDFRONT_DOMAIN` | FolderManager, ShareLinkGenerator | CloudFront distribution domain for constructing share URLs |
-| `LOG_LEVEL` | All Lambdas | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, or `ERROR` |
-| `ADMIN_EMAILS` | FolderManager | Comma-separated list of email addresses granted admin privileges |
+| `CLOUDFRONT_DOMAIN` | All Lambdas | CloudFront distribution domain for constructing share URLs |
 | `USER_POOL_ID` | WebDAVHandler | Cognito User Pool ID for WebDAV Basic auth validation |
 | `WEB_CLIENT_ID` | WebDAVHandler | Cognito App Client ID used by the WebDAV handler |
+| `LOG_LEVEL` | All Lambdas | Logging verbosity: `DEBUG`, `INFO`, `WARNING`, or `ERROR` |
+| `ADMIN_EMAILS` | FolderManager | Comma-separated list of email addresses granted admin privileges (merged in via `lambda_env_with_admin`) |
 
 ---
 
@@ -113,44 +129,49 @@ The following environment variables are injected into each Lambda function via t
 ```
 image-sharing-platform/
 ├── .github/
-│   └── workflows/              # CI/CD pipeline definitions
-├── terraform/
-│   ├── provider.tf             # AWS provider + backend config
-│   ├── variables.tf            # All input variables
-│   ├── outputs.tf              # All output values
-│   ├── storage.tf              # S3 buckets + DynamoDB tables
-│   ├── auth.tf                 # Cognito user pool + clients
-│   ├── compute.tf              # IAM + Lambda + EventBridge + SQS
-│   ├── api-gateway.tf          # API Gateway REST API
-│   ├── frontend.tf             # CloudFront + bucket policy
-│   ├── monitoring.tf           # CloudWatch dashboard + SNS alarms
-│   └── environments/           # Dev/prod var files
-│       ├── dev/
-│       └── prod/
+│   └── workflows/
+│       └── deploy-lambdas.yml       # CI/CD: secrets scan, vuln scan, OIDC Lambda redeploy
+├── Image Share.png                  # Architecture diagram
 ├── docs/
-│   ├── architecture.md         # Deep-dive architecture documentation
-│   ├── api.md                  # API reference with request/response examples
-│   └── security.md             # Security model, IAM roles, encryption
-├── Makefile                    # Convenience targets (tf-*, lint, test)
+│   ├── architecture.md              # Deep-dive architecture documentation
+│   ├── api.md                       # API reference with request/response examples
+│   ├── deployment.md                # Deployment runbook
+│   └── security.md                  # Security model, IAM roles, encryption
+├── Makefile                         # Convenience targets (tf-*, lint, test, upload-frontend)
+├── terraform/
+│   ├── provider.tf                  # AWS provider + S3 backend config
+│   ├── variables.tf                 # All input variables
+│   ├── outputs.tf                   # All output values
+│   ├── storage.tf                   # S3 buckets + DynamoDB tables
+│   ├── auth.tf                      # Cognito user pool + clients
+│   ├── compute.tf                   # IAM + Lambda + EventBridge + SQS DLQ
+│   ├── api-gateway.tf               # API Gateway REST API
+│   ├── frontend.tf                  # CloudFront + OAC bucket policy
+│   ├── monitoring.tf                # CloudWatch dashboard + SNS alarms
+│   ├── environments/                # Dev/prod tfvars files
+│   │   ├── dev/
+│   │   └── prod/
+│   └── lambda-zips/                 # Built Lambda deployment packages
+├── scripts/                         # Helper scripts
 ├── src/
 │   ├── backend/
-│   │   └── lambdas/            # Python source for each Lambda function
-│   │       ├── folder_manager/
-│   │       ├── upload_handler/
-│   │       ├── share_link_generator/
-│   │       ├── public_access_handler/
-│   │       ├── image_processor/
-│   │       └── webdav_handler/
+│   │   ├── lambdas/                 # Python source for each Lambda function
+│   │   │   ├── folder_manager/
+│   │   │   ├── upload_handler/
+│   │   │   ├── share_link_generator/
+│   │   │   ├── public_access_handler/
+│   │   │   ├── image_processor/
+│   │   │   └── webdav_handler/
+│   │   └── shared/                  # Shared config and utils (bundled into each Lambda)
+│   │       ├── config.py
+│   │       └── utils.py
 │   └── frontend/
-│       └── ui/                 # HTML, CSS, JS static assets
+│       └── ui/                      # Static SPA (served from S3 via CloudFront)
 │           ├── index.html
-│           ├── css/
-│           ├── js/
-│           └── assets/
-└── tests/
-    ├── unit/                   # Unit tests per Lambda function
-    ├── integration/            # Integration tests against deployed stacks
-    └── conftest.py             # Shared pytest fixtures
+│           ├── app.js
+│           ├── share.html
+│           └── style.css
+└── tests/                           # (not yet added — see make test)
 ```
 
 ---
@@ -163,7 +184,7 @@ The platform is deployed as a single Terraform configuration composed of multipl
 2. **auth.tf** — Cognito User Pool, User Pool Client, and domain configuration
 3. **compute.tf** — Lambda function roles, function definitions, and EventBridge rules
 4. **api-gateway.tf** — API Gateway REST API, routes, integrations, and WebDAV endpoint
-5. **frontend.tf** — CloudFront distribution, S3 bucket policy, and origin access identity
+5. **frontend.tf** — CloudFront distribution, S3 bucket policy, and origin access control (OAC)
 6. **monitoring.tf** — CloudWatch alarms, dashboard, and log group retention policies
 
 All configurations accept an `environment` variable (`dev` or `prod`) to control resource naming and sizing.
@@ -186,6 +207,18 @@ terraform -chdir=terraform plan \
   -var-file=environments/prod/terraform.tfvars \
   -out plan.tfplan
 ```
+
+---
+
+## CI/CD
+
+`.github/workflows/deploy-lambdas.yml` deploys Lambda functions on every push to `main`. It:
+
+1. Runs **Gitleaks** (secret detection) and **Trivy** (file-system vulnerability scan), uploading SARIF results to GitHub Security
+2. Detects which Lambda functions changed (`dorny/paths-filter`)
+3. Assumes an AWS role via **OIDC** (`AWS_LAMBDA_DEPLOY_ROLE` secret) and runs `aws lambda update-function-code` on the affected functions
+
+Secrets required in GitHub: `AWS_LAMBDA_DEPLOY_ROLE`. Infrastructure changes are deployed manually via Terraform.
 
 ---
 

@@ -28,15 +28,15 @@ locals {
   lambda_role_assume_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
+      Effect    = "Allow"
       Principal = { Service = "lambda.amazonaws.com" }
-      Action = "sts:AssumeRole"
+      Action    = "sts:AssumeRole"
     }]
   })
 
   # S3 resource ARN for user data prefix
-  s3_users_arn = "arn:aws:s3:::${var.bucket_name}/${var.users_prefix}*"
-  s3_thumb_arn = "arn:aws:s3:::${var.bucket_name}/${var.thumbnail_prefix}*"
+  s3_users_arn  = "arn:aws:s3:::${var.bucket_name}/${var.users_prefix}*"
+  s3_thumb_arn  = "arn:aws:s3:::${var.bucket_name}/${var.thumbnail_prefix}*"
   s3_bucket_arn = "arn:aws:s3:::${var.bucket_name}"
   s3_all_arn    = "arn:aws:s3:::${var.bucket_name}/*"
 }
@@ -67,33 +67,33 @@ resource "aws_iam_role_policy" "folder_manager" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3DeleteObjects"
-        Effect = "Allow"
-        Action = ["s3:DeleteObject", "s3:ListBucket"]
+        Sid      = "S3DeleteObjects"
+        Effect   = "Allow"
+        Action   = ["s3:DeleteObject", "s3:ListBucket"]
         Resource = [local.s3_users_arn, local.s3_bucket_arn]
       },
       {
-        Sid    = "DynamoDBFolders"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFolders"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.folders.arn, "${aws_dynamodb_table.folders.arn}/index/*"]
       },
       {
-        Sid    = "DynamoDBFiles"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFiles"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.files.arn, "${aws_dynamodb_table.files.arn}/index/*"]
       },
       {
-        Sid    = "DynamoDBShares"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:Scan"]
+        Sid      = "DynamoDBShares"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:Scan"]
         Resource = [aws_dynamodb_table.shares.arn, "${aws_dynamodb_table.shares.arn}/index/*"]
       },
       {
-        Sid    = "CognitoAdmin"
-        Effect = "Allow"
-        Action = ["cognito-idp:AdminGetUser", "cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"]
+        Sid      = "CognitoAdmin"
+        Effect   = "Allow"
+        Action   = ["cognito-idp:AdminGetUser", "cognito-idp:AdminDeleteUser", "cognito-idp:ListUsers"]
         Resource = [aws_cognito_user_pool.main.arn]
       },
     ]
@@ -122,21 +122,21 @@ resource "aws_iam_role_policy" "upload_handler" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3FileOps"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:CopyObject"]
+        Sid      = "S3FileOps"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:CopyObject"]
         Resource = [local.s3_users_arn, local.s3_thumb_arn]
       },
       {
-        Sid    = "DynamoDBFolders"
-        Effect = "Allow"
-        Action = ["dynamodb:UpdateItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFolders"
+        Effect   = "Allow"
+        Action   = ["dynamodb:UpdateItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.folders.arn, "${aws_dynamodb_table.folders.arn}/index/*"]
       },
       {
-        Sid    = "DynamoDBFiles"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFiles"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.files.arn, "${aws_dynamodb_table.files.arn}/index/*"]
       },
     ]
@@ -165,15 +165,15 @@ resource "aws_iam_role_policy" "share_link_generator" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "DynamoDBFolders"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:UpdateItem"]
+        Sid      = "DynamoDBFolders"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:UpdateItem"]
         Resource = [aws_dynamodb_table.folders.arn, "${aws_dynamodb_table.folders.arn}/index/*"]
       },
       {
-        Sid    = "DynamoDBShares"
-        Effect = "Allow"
-        Action = ["dynamodb:PutItem"]
+        Sid      = "DynamoDBShares"
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem"]
         Resource = [aws_dynamodb_table.shares.arn]
       },
     ]
@@ -202,27 +202,27 @@ resource "aws_iam_role_policy" "public_access_handler" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3FileReadWrite"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject"]
+        Sid      = "S3FileReadWrite"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject"]
         Resource = [local.s3_users_arn, local.s3_thumb_arn]
       },
       {
-        Sid    = "DynamoDBFolders"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem"]
+        Sid      = "DynamoDBFolders"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem"]
         Resource = [aws_dynamodb_table.folders.arn]
       },
       {
-        Sid    = "DynamoDBFiles"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFiles"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.files.arn, "${aws_dynamodb_table.files.arn}/index/*"]
       },
       {
-        Sid    = "DynamoDBShares"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:Scan"]
+        Sid      = "DynamoDBShares"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:Scan"]
         Resource = [aws_dynamodb_table.shares.arn, "${aws_dynamodb_table.shares.arn}/index/*"]
       },
     ]
@@ -251,15 +251,15 @@ resource "aws_iam_role_policy" "image_processor" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3ReadImages"
-        Effect = "Allow"
-        Action = ["s3:GetObject"]
+        Sid      = "S3ReadImages"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject"]
         Resource = [local.s3_users_arn]
       },
       {
-        Sid    = "S3WriteThumbnails"
-        Effect = "Allow"
-        Action = ["s3:PutObject", "s3:HeadObject"]
+        Sid      = "S3WriteThumbnails"
+        Effect   = "Allow"
+        Action   = ["s3:PutObject", "s3:HeadObject"]
         Resource = [local.s3_thumb_arn]
       },
     ]
@@ -288,27 +288,27 @@ resource "aws_iam_role_policy" "webdav_handler" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "S3FileOps"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:CopyObject"]
+        Sid      = "S3FileOps"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:CopyObject"]
         Resource = [local.s3_users_arn, local.s3_thumb_arn]
       },
       {
-        Sid    = "DynamoDBFolders"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFolders"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.folders.arn, "${aws_dynamodb_table.folders.arn}/index/*"]
       },
       {
-        Sid    = "DynamoDBFiles"
-        Effect = "Allow"
-        Action = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
+        Sid      = "DynamoDBFiles"
+        Effect   = "Allow"
+        Action   = ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query"]
         Resource = [aws_dynamodb_table.files.arn, "${aws_dynamodb_table.files.arn}/index/*"]
       },
       {
-        Sid    = "CognitoAuth"
-        Effect = "Allow"
-        Action = ["cognito-idp:AdminInitiateAuth"]
+        Sid      = "CognitoAuth"
+        Effect   = "Allow"
+        Action   = ["cognito-idp:AdminInitiateAuth"]
         Resource = [aws_cognito_user_pool.main.arn]
       },
     ]
@@ -384,6 +384,8 @@ locals {
     USERS_PREFIX      = var.users_prefix
     THUMBNAIL_PREFIX  = var.thumbnail_prefix
     CLOUDFRONT_DOMAIN = aws_cloudfront_distribution.main.domain_name
+    USER_POOL_ID      = aws_cognito_user_pool.main.id
+    WEB_CLIENT_ID     = aws_cognito_user_pool_client.web.id
     LOG_LEVEL         = var.log_level
   }
   lambda_env_with_admin = merge(local.lambda_env, {
