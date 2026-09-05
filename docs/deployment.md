@@ -29,8 +29,8 @@ pre-commit install
 
 Edit the environment parameter files in `cloudformation/parameters/`:
 
-- `dev.json` — Update `AdminEmails` and `BucketName`
-- `prod.json` — Update `AdminEmails` and `BucketName`
+- `dev.json`. Update `AdminEmails` and `BucketName`
+- `prod.json`. Update `AdminEmails` and `BucketName`
 
 The bucket name must be globally unique across all AWS accounts.
 
@@ -122,7 +122,7 @@ aws cloudformation deploy \
 ## 10. Verification Steps
 
 1. Get the CloudFront URL from the frontend stack outputs
-2. Open the URL in a browser — the login page should load
+2. Open the URL in a browser, the login page should load
 3. Create an account via the signup form
 4. Verify your email with the confirmation code
 5. Log in and create a folder
@@ -166,7 +166,7 @@ If a stack deployment fails:
 
 1. Check the CloudFormation console or AWS CLI for error details
 2. Fix the issue (e.g., parameter values, IAM permissions)
-3. Run the deploy command again — CloudFormation will update the existing stack
+3. Run the deploy command again. CloudFormation will update the existing stack
 
 ### Full Platform Rollback
 

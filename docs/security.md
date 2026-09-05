@@ -4,10 +4,10 @@
 
 ImageShare uses Amazon Cognito for user authentication with the `USER_PASSWORD_AUTH` flow:
 
-1. User signs up via `POST /auth/signup` — Cognito creates the user in `EXTERNAL_PROVIDER` (email) or `USER_PASSWORD` mode
+1. User signs up via `POST /auth/signup`. Cognito creates the user in `EXTERNAL_PROVIDER` (email) or `USER_PASSWORD` mode
 2. Cognito sends a verification code via email
 3. User confirms via `POST /auth/confirm` with the code
-4. User authenticates via `POST /auth/login` — Cognito returns three JWTs:
+4. User authenticates via `POST /auth/login`. Cognito returns three JWTs:
    - **ID Token**: Contains user claims (sub, email). Used as Bearer token for API calls.
    - **Access Token**: Used for Cognito API operations (optional).
    - **Refresh Token**: Long-lived token to obtain new ID/Access tokens.

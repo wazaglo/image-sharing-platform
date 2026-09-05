@@ -27,7 +27,7 @@ src/
 
 ---
 
-## Backend — Lambda Functions
+## Backend: Lambda Functions
 
 ### 1. FolderManager
 
@@ -116,7 +116,7 @@ src/
 
 **Behavior**:
 - Generates a unique 20-character token
-- Hashes the PIN with SHA256 before storing — the raw PIN is never persisted
+- Hashes the PIN with SHA256 before storing, the raw PIN is never persisted
 - Stores `sharedWithEmails` as a comma-separated string to enable "shared with me" queries via `contains` DynamoDB scan
 - Updates the folder's `isShared` flag in DynamoDB
 - Returns a share URL: `https://{CLOUDFRONT_DOMAIN}/ui/share.html?token={TOKEN}`
@@ -164,7 +164,7 @@ src/
   - Objects in the `trash/` prefix
 - Downloads the uploaded image from S3, resizes to 200×200 pixels maintaining aspect ratio
 - Stores the thumbnail at `thumbnails/{relative-path}`
-- Errors are logged and swallowed (non-fatal — a failed thumbnail does not block the upload)
+- Errors are logged and swallowed (non-fatal, a failed thumbnail does not block the upload)
 
 **Dependencies**: `boto3`, `Pillow`
 
@@ -199,7 +199,7 @@ src/
 
 ---
 
-## Backend — Shared Utilities
+## Backend: Shared Utilities
 
 - **Directory**: `backend/shared/`
 
@@ -222,7 +222,7 @@ Utility functions shared across all Lambda handlers:
 
 ---
 
-## Frontend — Web UI
+## Frontend: Web UI
 
 - **Directory**: `frontend/ui/`
 
@@ -262,7 +262,7 @@ Complete application logic (~1100 lines) handling:
 - **Admin panel**: List and delete Cognito users (admin only)
 - **Theme switching**: Toggles between light and dark themes, persisted in `localStorage`
 
-All API communication uses `fetch()` directly — no AWS SDK is used in the frontend. Authentication tokens are passed in `Authorization` headers.
+All API communication uses `fetch()` directly. NOAWS SDK is used in the frontend. Authentication tokens are passed in `Authorization` headers.
 
 ### `style.css`
 
@@ -283,9 +283,9 @@ Responsive design (~850 lines) featuring:
 
 Standalone public share page linked from share URLs. Contains:
 
-- **PIN entry screen**: Shown when the share is PIN-protected — validates PIN via `POST /share/{token}/verify`
+- **PIN entry screen**: Shown when the share is PIN-protected, validates PIN via `POST /share/{token}/verify`
 - **File grid**: Displays shared folder contents with download links
-- **Upload zone**: Visible only when the share has `permission=edit` — accepts drag-and-drop or click-to-select file uploads
+- **Upload zone**: Visible only when the share has `permission=edit` - accepts drag-and-drop or click-to-select file uploads
 - **Backend communication**: Talks directly to the PublicAccessHandler endpoints (`GET /share/{token}`, `POST /share/{token}/verify`, `POST /share/{token}`)
 
 ### Architecture
@@ -296,4 +296,4 @@ The frontend is a **pure HTML/CSS/JS** single-page application with no build too
 - **API Gateway** for all backend operations (folder/file CRUD, share management, admin functions)
 - **S3** directly via presigned URLs for file uploads and downloads
 
-No AWS SDK is loaded — all API calls use plain `fetch()` with JSON request/response bodies.
+No AWS SDK is loaded, all API calls use plain `fetch()` with JSON request/response bodies.

@@ -1,9 +1,9 @@
-# ImageShare — Serverless Image Sharing Platform
+# ImageShare: Serverless Image Sharing Platform
 
 ![MIT License](https://img.shields.io/badge/license-MIT-blue)
 ![AWS Serverless](https://img.shields.io/badge/AWS-serverless-orange)
 
-A fully serverless image sharing platform built on AWS, inspired by ownCloud and Nextcloud. ImageShare provides secure file storage, sharing, and management through a modern web UI with a purple-blue gradient theme. The entire backend runs on AWS Lambda, DynamoDB, S3, API Gateway, Cognito, EventBridge, and CloudFront — zero servers to manage.
+A fully serverless image sharing platform built on AWS, inspired by ownCloud and Nextcloud. ImageShare provides secure file storage, sharing, and management through a modern web UI with a purple-blue gradient theme. The entire backend runs on AWS Lambda, DynamoDB, S3, API Gateway, Cognito, EventBridge, and CloudFront. ZEROservers to manage.
 
 ---
 
@@ -17,38 +17,38 @@ The browser loads the static UI served from S3 via CloudFront (Origin Access Con
 
 ## Features
 
-- 📧 **Email sign-up/login** — Cognito-powered registration, login, email verification, and password reset
-- 📁 **Folder management** — Create, rename, move, delete folders with nested subfolder support and recursive cleanup
-- 📤 **File upload** — Single and multi-file upload with drag-and-drop zone, progress bar, and resume
-- 📂 **Folder upload** — Upload entire directory trees via `webkitdirectory` attribute
-- 🖼️ **File preview** — Inline preview for images, PDFs, text/code files, and video/audio
-- 🔍 **Full-text file search** — Search files by name across all folders and subfolders
-- 🔀 **Sort / filter** — Sort by name, size, or type; filter by all files, images, video, or PDF
-- 🌙 **Dark mode** — Toggle light/dark theme with `localStorage` persistence across sessions
-- 🔗 **Shareable folder links** — Generate share links with optional expiry date and view/edit permissions
-- 🔒 **PIN-protected shares** — Protect share links with a numeric PIN, hashed via SHA-256
-- 👥 **Share with specific users** — Share folders directly with other registered users by email address
-- 📋 **Shared with me** — Dedicated view listing all folders shared to your email address
-- 🖥️ **WebDAV endpoint** — Full WebDAV protocol support (PROPFIND, MKCOL, MOVE, GET, PUT, DELETE) for desktop clients
-- 🗑️ **Trash / recycle bin** — Soft-delete files and folders with restore or permanent empty-trash
-- 👤 **Account management** — Change email, update password, delete account from within the UI
-- 🔧 **Admin panel** — List all registered users and delete users (admin-only access)
-- ✅ **Batch file operations** — Multi-select files for batch delete with confirmation dialog
-- 📱 **Responsive design** — Fully responsive UI works on mobile, tablet, and desktop viewports
-- 🎨 **Modern theme** — Gradient purple-blue color scheme with smooth transitions and card-based layout
-- 📄 **File type icons** — Visual file type indicators for images, PDFs, code, archives, and more
-- ⚡ **Presigned URLs** — Direct S3 upload via presigned URLs for fast, scalable file uploads
+- 📧 **Email sign-up/login**: Cognito-powered registration, login, email verification, and password reset
+- 📁 **Folder management**: Create, rename, move, delete folders with nested subfolder support and recursive cleanup
+- 📤 **File upload**: Single and multi-file upload with drag-and-drop zone, progress bar, and resume
+- 📂 **Folder upload**: Upload entire directory trees via `webkitdirectory` attribute
+- 🖼️ **File preview**: Inline preview for images, PDFs, text/code files, and video/audio
+- 🔍 **Full-text file search**: Search files by name across all folders and subfolders
+- 🔀 **Sort / filter**: Sort by name, size, or type; filter by all files, images, video, or PDF
+- 🌙 **Dark mode**: Toggle light/dark theme with `localStorage` persistence across sessions
+- 🔗 **Shareable folder links**: Generate share links with optional expiry date and view/edit permissions
+- 🔒 **PIN-protected shares**: Protect share links with a numeric PIN, hashed via SHA-256
+- 👥 **Share with specific users**: Share folders directly with other registered users by email address
+- 📋 **Shared with me**: Dedicated view listing all folders shared to your email address
+- 🖥️ **WebDAV endpoint**: Full WebDAV protocol support (PROPFIND, MKCOL, MOVE, GET, PUT, DELETE) for desktop clients
+- 🗑️ **Trash / recycle bin**: Soft-delete files and folders with restore or permanent empty-trash
+- 👤 **Account management**: Change email, update password, delete account from within the UI
+- 🔧 **Admin panel**: List all registered users and delete users (admin-only access)
+- ✅ **Batch file operations**: Multi-select files for batch delete with confirmation dialog
+- 📱 **Responsive design**: Fully responsive UI works on mobile, tablet, and desktop viewports
+- 🎨 **Modern theme**: Gradient purple-blue color scheme with smooth transitions and card-based layout
+- 📄 **File type icons**: Visual file type indicators for images, PDFs, code, archives, and more
+- ⚡ **Presigned URLs**: Direct S3 upload via presigned URLs for fast, scalable file uploads
 
 ---
 
 ## Prerequisites
 
-- **Python 3.11+** — Runtime for Lambda functions and local testing
-- **Terraform >= 1.5** — Infrastructure as Code tool for deploying all AWS resources
-- **AWS CLI v2** — Configured with credentials that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM. The Terraform config defaults to the `gloria` `aws_profile` (override via `-var="aws_profile=..."`)
-- **AWS Account** — An active AWS account with sufficient service quotas
-- **Node.js 18+** (optional) — Only needed if you want to build/minify the frontend assets locally
-- **Domain name** (optional) — For a custom CloudFront domain and HTTPS certificate
+- **Python 3.11+**: Runtime for Lambda functions and local testing
+- **Terraform >= 1.5**: Infrastructure as Code tool for deploying all AWS resources
+- **AWS CLI v2**: Configured with credentials that have permissions for S3, DynamoDB, Lambda, API Gateway, Cognito, CloudFront, EventBridge, and IAM. The Terraform config defaults to the `gloria` `aws_profile` (override via `-var="aws_profile=..."`)
+- **AWS Account**: An active AWS account with sufficient service quotas
+- **Node.js 18+** (optional). Only needed if you want to build/minify the frontend assets locally
+- **Domain name** (optional). For a custom CloudFront domain and HTTPS certificate
 
 ---
 
@@ -74,7 +74,7 @@ aws s3 sync src/frontend/ui/ s3://<your-bucket>/ui/ --cache-control 'max-age=360
 # 5. Open the CloudFront URL from the Terraform outputs
 ```
 
-> **Tip:** Replace `<repo-url>` and `<your-bucket>` with actual values (the default bucket name is `nunya-pixel`). For steps 2–3 use `make tf-apply env=dev`, and for step 4 `BUCKET=<your-bucket> make upload-frontend`. `make invalidate-cache` purges the CloudFront `/ui/*` cache after an update.
+> **Tip:** Replace `<repo-url>` and `<your-bucket>` with actual values (the default bucket name is `nunya-pixel`). For steps 2-3 use `make tf-apply env=dev`, and for step 4 `BUCKET=<your-bucket> make upload-frontend`. `make invalidate-cache` purges the CloudFront `/ui/*` cache after an update.
 
 ## Makefile Targets
 
@@ -180,12 +180,12 @@ image-sharing-platform/
 
 The platform is deployed as a single Terraform configuration composed of multiple resource files. Each file manages a logical layer of the infrastructure.
 
-1. **storage.tf** — S3 buckets for files and UI, DynamoDB tables for folders, files, and shares
-2. **auth.tf** — Cognito User Pool, User Pool Client, and domain configuration
-3. **compute.tf** — Lambda function roles, function definitions, and EventBridge rules
-4. **api-gateway.tf** — API Gateway REST API, routes, integrations, and WebDAV endpoint
-5. **frontend.tf** — CloudFront distribution, S3 bucket policy, and origin access control (OAC)
-6. **monitoring.tf** — CloudWatch alarms, dashboard, and log group retention policies
+1. **storage.tf** - S3 buckets for files and UI, DynamoDB tables for folders, files, and shares
+2. **auth.tf** - Cognito User Pool, User Pool Client, and domain configuration
+3. **compute.tf** - Lambda function roles, function definitions, and EventBridge rules
+4. **api-gateway.tf** - API Gateway REST API, routes, integrations, and WebDAV endpoint
+5. **frontend.tf** - CloudFront distribution, S3 bucket policy, and origin access control (OAC)
+6. **monitoring.tf** - CloudWatch alarms, dashboard, and log group retention policies
 
 All configurations accept an `environment` variable (`dev` or `prod`) to control resource naming and sizing.
 
@@ -195,8 +195,8 @@ All configurations accept an `environment` variable (`dev` or `prod`) to control
 
 Environment-specific variable files are located in `terraform/environments/`:
 
-- `dev/terraform.tfvars` — Minimized resources, lower DynamoDB read/write capacity, shorter log retention
-- `prod/terraform.tfvars` — Production-sized DynamoDB capacity, longer log retention, additional alarms
+- `dev/terraform.tfvars`. Minimized resources, lower DynamoDB read/write capacity, shorter log retention
+- `prod/terraform.tfvars`. Production-sized DynamoDB capacity, longer log retention, additional alarms
 
 Override any variable at deploy time with `-var` or a custom `.tfvars` file:
 
@@ -224,4 +224,4 @@ Secrets required in GitHub: `AWS_LAMBDA_DEPLOY_ROLE`. Infrastructure changes are
 
 ## License
 
-MIT — see [LICENSE](LICENSE) for details.
+MIT, see [LICENSE](LICENSE) for details.

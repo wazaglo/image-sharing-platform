@@ -35,13 +35,13 @@ pre-commit install
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
 
-- `feat:` — A new feature
-- `fix:` — A bug fix
-- `docs:` — Documentation changes
-- `chore:` — Maintenance tasks
-- `refactor:` — Code restructuring without feature/bug changes
-- `test:` — Adding or updating tests
-- `ci:` — CI/CD configuration changes
+- `feat:`. A new feature
+- `fix:`. A bug fix
+- `docs:`. Documentation changes
+- `chore:`. Maintenance tasks
+- `refactor:`. Code restructuring without feature/bug changes
+- `test:`. Adding or updating tests
+- `ci:`. CI/CD configuration changes
 
 Examples:
 ```
@@ -65,7 +65,7 @@ docs: update API reference with new endpoints
 - All new features must include unit tests
 - Test files go in the `tests/` directory mirroring the `src/` structure
 - Use pytest fixtures for common setup
-- Mock AWS services (boto3) in unit tests — never hit real APIs
+- Mock AWS services (boto3) in unit tests, never hit real APIs
 - Tests are run with `make test` or `python -m pytest tests/ -v`
 - Aim for at least 80% code coverage on new code
 
@@ -73,7 +73,7 @@ docs: update API reference with new endpoints
 
 The project uses GitHub Actions for CI/CD. There are two workflows:
 
-- `deploy.yml` — Runs lint and test on all PRs and pushes; deploys to dev (develop branch) or prod (main branch)
-- `test.yml` — Runs tests on PRs across Python 3.10 and 3.11
+- `deploy.yml`. Runs lint and test on all PRs and pushes; deploys to dev (develop branch) or prod (main branch)
+- `test.yml`. Runs tests on PRs across Python 3.10 and 3.11
 
 All PR checks must pass before merging.

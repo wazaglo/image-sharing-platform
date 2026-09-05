@@ -2,7 +2,7 @@
 
 ## System Architecture
 
-ImageShare is a fully serverless platform built on AWS. The architecture uses managed services exclusively — no EC2 instances, no container orchestration, no manual server provisioning. Every component scales automatically and incurs cost only when used.
+ImageShare is a fully serverless platform built on AWS. The architecture uses managed services exclusively. NOEC2 instances. NOcontainer orchestration. NOmanual server provisioning. Every component scales automatically and incurs cost only when used.
 
 ### Component Overview
 
@@ -65,7 +65,7 @@ ImageShare is a fully serverless platform built on AWS. The architecture uses ma
 1. Client sends signup request to Cognito via `POST /auth/signup`
 2. Cognito sends verification code via email
 3. Client confirms signup via `POST /auth/confirm`
-4. Client authenticates via `POST /auth/login` — Cognito returns ID, access, and refresh tokens
+4. Client authenticates via `POST /auth/login`. Cognito returns ID, access, and refresh tokens
 5. Client includes the ID token as a Bearer token in subsequent API requests
 6. API Gateway Cognito authorizer validates the JWT and passes user claims to Lambda
 
@@ -110,7 +110,7 @@ ImageShare is a fully serverless platform built on AWS. The architecture uses ma
 | deletedAt | Number | | Epoch timestamp of deletion |
 | hasThumbnail | Boolean | | Whether thumbnail exists |
 
-**GSI: folderId-index** — Allows querying all files in a folder.
+**GSI: folderId-index** - Allows querying all files in a folder.
 
 ### Shares Table
 
@@ -225,6 +225,6 @@ Cost drivers:
 
 - **DynamoDB PITR**: Continuous backups with 35-day recovery window. Can restore to any point in the last 35 days.
 - **S3 Versioning**: Enabled on objects bucket. Allows recovery from accidental overwrites or deletions.
-- **S3 Cross-Region Replication**: Optional — can replicate to a secondary region for DR.
-- **CloudFormation**: Infrastructure as Code — entire platform can be recreated from templates.
+- **S3 Cross-Region Replication**: Optional, can replicate to a secondary region for DR.
+- **CloudFormation**: Infrastructure as Code, entire platform can be recreated from templates.
 - **Backup Strategy**: Weekly exports of DynamoDB to S3 via AWS Backup, retained for 90 days.
