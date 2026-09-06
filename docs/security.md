@@ -45,9 +45,9 @@ Two authorization layers are used:
 
 | Layer | Encryption Method |
 |-------|------------------|
-| S3 Objects | SSE-S3 (AES-256) — enabled by default on all buckets |
-| DynamoDB | AWS-managed KMS keys — encryption at rest enabled by default on all tables |
-| CloudWatch Logs | AWS-managed KMS keys — enabled by default |
+| S3 Objects | SSE-S3 (AES-256) - enabled by default on all buckets |
+| DynamoDB | AWS-managed KMS keys - encryption at rest enabled by default on all tables |
+| CloudWatch Logs | AWS-managed KMS keys - enabled by default |
 | CloudFront | Not applicable (edge cache holds encrypted data) |
 
 ### In Transit

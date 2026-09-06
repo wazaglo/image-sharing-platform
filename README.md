@@ -85,7 +85,7 @@ aws s3 sync src/frontend/ui/ s3://<your-bucket>/ui/ --cache-control 'max-age=360
 | `make tf-apply env=dev` | `terraform apply` the saved plan |
 | `make tf-destroy env=dev` | `terraform destroy` the environment |
 | `make lint` | `terraform fmt -check && terraform validate` |
-| `make test` | Run pytest (requires a `tests/` directory — not yet added) |
+| `make test` | Run pytest (requires a `tests/` directory - not yet added) |
 | `make upload-frontend` | `aws s3 sync src/frontend/ui/ s3://$BUCKET/ui/` |
 | `make invalidate-cache` | CloudFront cache invalidation of `/ui/*` |
 
@@ -119,7 +119,7 @@ The following environment variables are injected into each Lambda function via t
 | **UploadHandler** | `POST /folders/{id}/files` | Cognito | Handles file CRUD (upload, list, rename, move, delete), full-text file search, trash/restore, batch operations, and presigned URL generation |
 | **ShareLinkGenerator** | `POST /folders/{id}/share` | Cognito | Creates share links with optional expiry date, view/edit permissions, SHA-256 PIN hashing, and email-based folder sharing |
 | **PublicAccessHandler** | `GET/POST /share/{token}` | None (public) | Serves public share pages, verifies PIN codes, lists shared files, and handles file uploads to shared folders |
-| **ImageProcessor** | EventBridge trigger (S3 `PutObject`) | — | Listens for new objects in S3, generates resized thumbnail images, and writes them to the thumbnail prefix |
+| **ImageProcessor** | EventBridge trigger (S3 `PutObject`) | - | Listens for new objects in S3, generates resized thumbnail images, and writes them to the thumbnail prefix |
 | **WebDAVHandler** | `ANY /webdav/{proxy+}` | Basic Auth | Emulates the WebDAV protocol so desktop clients (Windows Explorer, macOS Finder, Cyberduck) can browse and manage files |
 
 ---
@@ -171,7 +171,7 @@ image-sharing-platform/
 │           ├── app.js
 │           ├── share.html
 │           └── style.css
-└── tests/                           # (not yet added — see make test)
+└── tests/                           # (not yet added - see make test)
 ```
 
 ---

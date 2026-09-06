@@ -79,7 +79,7 @@ src/
 | `upload` (default) | Generate presigned PUT URL, create DynamoDB record, update folder counts |
 | `list` | List files in folder (excludes deleted), enriches with download + thumbnail URLs |
 | `search` | Scan all user files for name match (excludes deleted) |
-| `delete` | Soft delete — copy to `trash/` S3 prefix, mark `isDeleted` in DynamoDB |
+| `delete` | Soft delete - copy to `trash/` S3 prefix, mark `isDeleted` in DynamoDB |
 | `rename` | Copy S3 object to new key, update DynamoDB, handle thumbnail renames |
 | `move` | Copy S3 object to new folder prefix, update DynamoDB, update folder file counts |
 | `trash` | List all soft-deleted files for the user |
